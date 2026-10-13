@@ -1,0 +1,8 @@
+{
+  "name": "workflow",
+  "displayName": "Workflow",
+  "version": "1.0.0",
+  "description": "A phased, test-driven Claude Code workflow: plans split into phases and steps, steps run in subagents, TDD on every change, tests and a fresh-agent review after every phase. TDD and plan shape are enforced by hooks.",
+  "author": { "name": "Austin" },
+  "keywords": ["workflow", "tdd", "planning", "subagents", "code-review"]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "claude-workflow",
+  "description": "Austin's Claude Code workflow as a plugin: phased plans, subagents, enforced TDD and a review after every phase.",
+  "owner": { "name": "Austin" },
+  "plugins": [
+    {
+      "name": "workflow",
+      "source": "./",
+      "description": "A phased, test-driven Claude Code workflow with TDD and plan shape enforced by hooks.",
+      "category": "productivity",
+      "tags": ["workflow", "tdd", "planning", "subagents"]
+    }
+  ]
+}
