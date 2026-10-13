@@ -12,13 +12,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "scripts")
 
 
-def run_hook(script, payload, env=None, cwd=None):
+def run_hook(script, payload, cwd=None):
     """Run a hook script like Claude Code does; return (exit code, parsed JSON output or None)."""
-    full_env = os.environ.copy()
-    full_env.update(env or {})
     result = subprocess.run([sys.executable, "-B", os.path.join(SCRIPTS, script)],
                             input=payload if isinstance(payload, str) else json.dumps(payload),
-                            capture_output=True, text=True, env=full_env, cwd=cwd, timeout=30)
+                            capture_output=True, text=True, cwd=cwd, timeout=30)
     output = result.stdout.strip()
     return result.returncode, (json.loads(output) if output else None)
 
@@ -54,10 +52,10 @@ class TddGateGitTests(unittest.TestCase):
         with open(path, "w") as handle:
             handle.write(text)
 
-    def edit(self, rel, tool="Edit", env=None):
+    def edit(self, rel, tool="Edit"):
         payload = {"session_id": self.session, "cwd": self.repo, "hook_event_name": "PreToolUse",
                    "tool_name": tool, "tool_input": {"file_path": os.path.join(self.repo, rel)}}
-        return run_hook("tdd_gate.py", payload, env={"CLAUDE_PROJECT_DIR": self.repo, **(env or {})})
+        return run_hook("tdd_gate.py", payload)
 
     def test_source_edit_blocked_on_clean_tree(self):
         code, out = self.edit("src/app.py")
@@ -114,14 +112,14 @@ class TddGateGitTests(unittest.TestCase):
         try:
             payload = {"session_id": self.session, "cwd": self.repo, "tool_name": "Write",
                        "tool_input": {"file_path": os.path.join(outside, "script.py")}}
-            self.assertIsNone(run_hook("tdd_gate.py", payload, env={"CLAUDE_PROJECT_DIR": self.repo})[1])
+            self.assertIsNone(run_hook("tdd_gate.py", payload)[1])
         finally:
             shutil.rmtree(outside, ignore_errors=True)
 
     def test_relative_paths_resolve_against_cwd(self):
         payload = {"session_id": self.session, "cwd": self.repo, "tool_name": "Edit",
                    "tool_input": {"file_path": "src/app.py"}}
-        self.assertEqual(decision(run_hook("tdd_gate.py", payload, env={"CLAUDE_PROJECT_DIR": self.repo})[1]), "deny")
+        self.assertEqual(decision(run_hook("tdd_gate.py", payload)[1]), "deny")
 
 class TddGateNoGitTests(unittest.TestCase):
     def setUp(self):
@@ -134,7 +132,7 @@ class TddGateNoGitTests(unittest.TestCase):
     def edit(self, rel, session=None):
         payload = {"session_id": session or self.session, "cwd": self.project, "tool_name": "Write",
                    "tool_input": {"file_path": os.path.join(self.project, rel)}}
-        return run_hook("tdd_gate.py", payload, env={"CLAUDE_PROJECT_DIR": self.project})[1]
+        return run_hook("tdd_gate.py", payload)[1]
 
     def test_test_first_then_source(self):
         out = self.edit("app.py")
@@ -168,7 +166,7 @@ GOOD_PLAN = """# Add CSV export
 
 
 class PlanGateTests(unittest.TestCase):
-    def submit(self, plan=None, plan_file=None, env=None):
+    def submit(self, plan=None, plan_file=None):
         tool_input = {}
         if plan is not None:
             tool_input["plan"] = plan
@@ -176,7 +174,7 @@ class PlanGateTests(unittest.TestCase):
             tool_input["planFilePath"] = plan_file
         payload = {"session_id": "s", "hook_event_name": "PreToolUse", "tool_name": "ExitPlanMode",
                    "tool_input": tool_input}
-        return run_hook("plan_gate.py", payload, env=env)
+        return run_hook("plan_gate.py", payload)
 
     def test_phased_plan_passes(self):
         self.assertEqual(self.submit(GOOD_PLAN), (0, None))
