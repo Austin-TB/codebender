@@ -1,14 +1,6 @@
-"""Small helpers shared by the workflow plugin's hook scripts (stdlib only)."""
+"""Small helpers shared by the Codebender plugin's hook scripts (stdlib only)."""
 import json
-import os
 import sys
-
-OFF_VALUES = {"0", "off", "false", "no", "disabled"}
-
-
-def disabled(var):
-    """True when an environment switch such as WORKFLOW_TDD=off turns a check off."""
-    return os.environ.get(var, "").strip().lower() in OFF_VALUES
 
 
 def read_payload():

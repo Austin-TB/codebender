@@ -1,6 +1,6 @@
-# The user's Claude Code workflow
+# Codebender rules for Claude Code
 
-These are the user's standing rules for every session, installed through the `workflow` plugin. Rules marked (enforced) are also checked by the plugin's hooks, so a blocked edit or a rejected plan points back to this list.
+These are the user's standing rules for every session, installed through the `codebender` plugin. Rules marked (enforced) are also checked by the plugin's hooks, so a blocked edit or a rejected plan points back to this list.
 
 ## Thinking and talking
 - Reasoning is caveman-terse: short fragments, no filler, every fact kept.
@@ -23,8 +23,8 @@ These are the user's standing rules for every session, installed through the `wo
 - The plugin blocks edits to source files until a test file has changed: in a git repo, a test change must be in the working tree; elsewhere, a test file must have been edited earlier in the session. A blocked edit means writing the test first. Exceptions (generated code, config written in code) need the user's explicit OK; the check is not worked around through the shell.
 
 ## After every phase
-1. `workflow:test-runner` runs the full suite. The next phase starts only when it passes.
-2. `workflow:reviewer`, a fresh agent that has not seen the work, reviews that phase's changes for bugs and edge cases.
+1. `codebender:test-runner` runs the full suite. The next phase starts only when it passes.
+2. `codebender:reviewer`, a fresh agent that has not seen the work, reviews that phase's changes for bugs and edge cases.
 3. Confirmed issues are fixed, test first, before the next phase starts. Fixes target real inputs: no speculative abstractions, options or features.
 
 ## Tools

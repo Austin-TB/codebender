@@ -1,5 +1,5 @@
 {
-  "description": "workflow: loads the rules at session start, enforces TDD before source edits, and enforces phased plans at plan approval",
+  "description": "codebender: loads the rules at session start, enforces TDD before source edits, and enforces phased plans at plan approval",
   "hooks": {
     "SessionStart": [
       {

@@ -1,4 +1,4 @@
-"""Tests for the workflow plugin's hook scripts. Run: python3 -m unittest discover -s tests"""
+"""Tests for the Codebender plugin's hook scripts. Run: python3 -m unittest discover -s tests"""
 import json
 import os
 import shutil
@@ -14,7 +14,7 @@ SCRIPTS = os.path.join(ROOT, "scripts")
 
 def run_hook(script, payload, env=None, cwd=None):
     """Run a hook script like Claude Code does; return (exit code, parsed JSON output or None)."""
-    full_env = {k: v for k, v in os.environ.items() if not k.startswith("WORKFLOW_")}
+    full_env = os.environ.copy()
     full_env.update(env or {})
     result = subprocess.run([sys.executable, "-B", os.path.join(SCRIPTS, script)],
                             input=payload if isinstance(payload, str) else json.dumps(payload),
@@ -123,10 +123,6 @@ class TddGateGitTests(unittest.TestCase):
                    "tool_input": {"file_path": "src/app.py"}}
         self.assertEqual(decision(run_hook("tdd_gate.py", payload, env={"CLAUDE_PROJECT_DIR": self.repo})[1]), "deny")
 
-    def test_switch_turns_it_off(self):
-        self.assertIsNone(self.edit("src/app.py", env={"WORKFLOW_TDD": "off"})[1])
-
-
 class TddGateNoGitTests(unittest.TestCase):
     def setUp(self):
         self.project = os.path.realpath(tempfile.mkdtemp(prefix="wf-plain-"))
@@ -230,31 +226,24 @@ class PlanGateTests(unittest.TestCase):
         self.assertEqual(self.submit(), (0, None))
         self.assertEqual(run_hook("plan_gate.py", "garbage"), (0, None))
 
-    def test_switch_turns_it_off(self):
-        self.assertEqual(self.submit("1. no phases", env={"WORKFLOW_PLANS": "off"}), (0, None))
-
-
 class InjectRulesTests(unittest.TestCase):
     def test_rules_are_added_as_context(self):
         code, out = run_hook("inject_rules.py", {"hook_event_name": "SessionStart", "source": "startup"})
         self.assertEqual(code, 0)
         spec = out["hookSpecificOutput"]
         self.assertEqual(spec["hookEventName"], "SessionStart")
-        with open(os.path.join(ROOT, "rules", "workflow.md"), encoding="utf-8") as handle:
+        with open(os.path.join(ROOT, "rules", "codebender.md"), encoding="utf-8") as handle:
             self.assertEqual(spec["additionalContext"], handle.read().strip())
 
     def test_rules_stay_under_the_context_cap(self):
-        with open(os.path.join(ROOT, "rules", "workflow.md"), encoding="utf-8") as handle:
+        with open(os.path.join(ROOT, "rules", "codebender.md"), encoding="utf-8") as handle:
             self.assertLess(len(handle.read()), 9000)  # hook context over 10,000 chars is cut to a preview
 
     def test_rules_name_the_agents_that_exist(self):
-        with open(os.path.join(ROOT, "rules", "workflow.md"), encoding="utf-8") as handle:
+        with open(os.path.join(ROOT, "rules", "codebender.md"), encoding="utf-8") as handle:
             rules = handle.read()
         for agent in os.listdir(os.path.join(ROOT, "agents")):
-            self.assertIn("workflow:" + agent[:-3], rules)
-
-    def test_switch_turns_it_off(self):
-        self.assertEqual(run_hook("inject_rules.py", {}, env={"WORKFLOW_RULES": "off"}), (0, None))
+            self.assertIn("codebender:" + agent[:-3], rules)
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@
 - In a git repo, a source edit is allowed once the working tree has an added, modified
   or deleted test file. Committing resets it, so each commit needs its own test change.
 - Outside git, a source edit is allowed once a test file was edited in this session.
-- WORKFLOW_TDD=off turns the check off. Any internal error allows the edit.
+- Any internal error allows the edit.
 """
 import os
 import re
@@ -15,7 +15,7 @@ import sys
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import deny, disabled, read_payload  # noqa: E402
+from _common import deny, read_payload  # noqa: E402
 
 SOURCE_EXT = {
     ".py", ".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts", ".go", ".rs",
@@ -35,7 +35,7 @@ SKIP_DIRS = {
     "node_modules", ".venv", "venv", ".tox", "dist", "build", "vendor", "third_party",
     ".git", "__pycache__", ".next", "target", "migrations",
 }
-MARKER_DIR = os.path.join(tempfile.gettempdir(), "claude-workflow-tdd")
+MARKER_DIR = os.path.join(tempfile.gettempdir(), "codebender-tdd")
 
 
 def is_test(path):
@@ -98,15 +98,13 @@ def mark_session(payload):
 
 def main():
     payload = read_payload()
-    if disabled("WORKFLOW_TDD"):
-        return
     tool_input = payload.get("tool_input") or {}
     file_path = tool_input.get("file_path") if isinstance(tool_input, dict) else None
     if not isinstance(file_path, str) or not file_path:
         return
 
     cwd = payload.get("cwd") or os.getcwd()
-    project = os.path.realpath(os.environ.get("CLAUDE_PROJECT_DIR") or cwd)
+    project = os.path.realpath(cwd)
     target = os.path.realpath(file_path if os.path.isabs(file_path) else os.path.join(cwd, file_path))
     if not inside(target, project):
         return
@@ -134,7 +132,7 @@ def main():
         where = "in the working tree (git status shows no added or modified test files)"
 
     deny("PreToolUse",
-         "TDD rule (workflow plugin): {rel} is source code, and no test has changed yet {where}. "
+         "TDD rule (codebender plugin): {rel} is source code, and no test has changed yet {where}. "
          "Write or update a failing test for this change first (for example tests/test_<module>.py, "
          "<name>.test.ts or <name>_test.go), run it and watch it fail, then edit {rel}. If this change "
          "really needs no test, stop and ask the user; don't work around this check through the shell."
